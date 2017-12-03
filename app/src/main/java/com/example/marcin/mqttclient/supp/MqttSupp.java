@@ -3,6 +3,8 @@ package com.example.marcin.mqttclient.supp;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.marcin.mqttclient.R;
+
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -19,14 +21,22 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class MqttSupp {
     public MqttAndroidClient mqttAndroidClient;
+    HistoryAdapter mHistoryAdapter;
 
-    String brokerUri = "tcp://192.168.0.102:1883";
-    final String clientId = "Android Client";
-    final String subscription = "inTopic";
+    String brokerUri;
+    String clientId;
+    String answerTopic;
+    String sendTopic;
+    String errorTopic;
 
 
-    public MqttSupp(Context context, String brokerUri) {
+    public MqttSupp(Context context, String brokerUri, HistoryAdapter historyAdapter) {
         this.brokerUri = "tcp://" + brokerUri;
+        mHistoryAdapter = historyAdapter;
+        clientId = context.getString(R.string.client_id);
+        answerTopic = context.getString(R.string.answer_topic);
+        sendTopic = context.getString(R.string.send_topic);
+        errorTopic = context.getString(R.string.error_topic);
         mqttAndroidClient = new MqttAndroidClient(context, this.brokerUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -42,6 +52,7 @@ public class MqttSupp {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 Log.w("MQTT", message.toString());
+                mHistoryAdapter.add(0, message.toString());
             }
 
             @Override
@@ -67,12 +78,14 @@ public class MqttSupp {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    subscribeToTopic();
+                    subscribeToTopic(answerTopic);
+                    subscribeToTopic(errorTopic);
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     Log.w("MQTT", "Connection error to: " + brokerUri + exception.toString());
+                    mHistoryAdapter.add(0, "Problem z połączeniem z brokerem");
                 }
             });
         } catch (MqttException e) {
@@ -80,17 +93,28 @@ public class MqttSupp {
         }
     }
 
-    private void subscribeToTopic() {
+    public void disconnect(){
         try {
-            mqttAndroidClient.subscribe(subscription, 0, null, new IMqttActionListener() {
+            mqttAndroidClient.disconnect();
+            mHistoryAdapter.add(0, "Rozłączono z brokerem");
+        } catch (MqttException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void subscribeToTopic(final String topic) {
+        try {
+            mqttAndroidClient.subscribe(topic, 0, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     Log.w("MQTT", "Subscription success");
+                    mHistoryAdapter.add(0, "Zasubskrybowano do " + topic);
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     Log.w("MQTT", "Subscription fail: " + exception.toString());
+                    mHistoryAdapter.add(0, "Problem z subskrypcją do " + topic);
                 }
             });
         } catch (Exception e) {
@@ -104,7 +128,7 @@ public class MqttSupp {
 
     public void sendMessage(String message) {
         try {
-            mqttAndroidClient.publish(subscription, new MqttMessage(message.getBytes()));
+            mqttAndroidClient.publish(sendTopic, new MqttMessage(message.getBytes()));
         } catch (MqttException e) {
             e.printStackTrace();
         }

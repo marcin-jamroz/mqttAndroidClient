@@ -20,12 +20,14 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class MqttSupp {
     public MqttAndroidClient mqttAndroidClient;
 
-    final String brokerUri = "tcp://192.168.0.102:1883";
+    String brokerUri = "tcp://192.168.0.102:1883";
     final String clientId = "Android Client";
     final String subscription = "inTopic";
 
-    public MqttSupp(Context context) {
-        mqttAndroidClient = new MqttAndroidClient(context, brokerUri, clientId);
+
+    public MqttSupp(Context context, String brokerUri) {
+        this.brokerUri = "tcp://" + brokerUri;
+        mqttAndroidClient = new MqttAndroidClient(context, this.brokerUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {

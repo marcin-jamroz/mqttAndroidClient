@@ -38,28 +38,6 @@ public class MqttSupp {
         sendTopic = context.getString(R.string.send_topic);
         errorTopic = context.getString(R.string.error_topic);
         mqttAndroidClient = new MqttAndroidClient(context, this.brokerUri, clientId);
-        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
-                Log.w("MQTT", serverURI);
-            }
-
-            @Override
-            public void connectionLost(Throwable cause) {
-
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Log.w("MQTT", message.toString());
-                mHistoryAdapter.add(0, message.toString());
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-
-            }
-        });
         connect();
     }
 
@@ -129,6 +107,8 @@ public class MqttSupp {
     public void sendMessage(String message) {
         try {
             mqttAndroidClient.publish(sendTopic, new MqttMessage(message.getBytes()));
+            mHistoryAdapter.add(0, "Wysłano: " + message.toCharArray()[0]);
+            Log.i("MQTT", "Wysłano:" + message);
         } catch (MqttException e) {
             e.printStackTrace();
         }

@@ -24,8 +24,8 @@ import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.logging.Handler;
 
 @EActivity(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity {
@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
 
     @AfterViews
-    void setupRecycleViewer(){
+    void setupRecycleViewer() {
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         mHistoryAdapter = new HistoryAdapter(new ArrayList<String>());
@@ -55,21 +55,27 @@ public class MainActivity extends AppCompatActivity {
     @AfterViews
     protected void startMqtt() {
         mqttSupp = new MqttSupp(getApplicationContext(), brokerAddress, mHistoryAdapter);
+        try {
+            wait(1000);
+        } catch (Exception e){}
+
         mqttSupp.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
-mHistoryAdapter.add(0, "Połaczono z brokerem");
-mqttSupp.sendMessage("c");
+                mHistoryAdapter.add(0, "Połaczono z brokerem");
+                if (!isRobotConnected) {
+                       mqttSupp.sendMessage("s");
+                }
             }
 
             @Override
             public void connectionLost(Throwable cause) {
-mHistoryAdapter.add(0, "Rozłączono");
+                mHistoryAdapter.add(0, "Rozłączono");
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                if(!isRobotConnected && Objects.equals(message.toString(), " 0")){
+                if (!isRobotConnected && (message.toString().equals("zlecono"))) {
                     mHistoryAdapter.add(0, "Połączono z robotem");
                     isRobotConnected = true;
                 } else {
@@ -85,7 +91,7 @@ mHistoryAdapter.add(0, "Rozłączono");
             }
         });
 
-       // mqttSupp.sendMessage("c");
+        // mqttSupp.sendMessage("c");
     }
 
     @SeekBarProgressChange(R.id.speedBar)
@@ -95,47 +101,53 @@ mHistoryAdapter.add(0, "Rozłączono");
 
     @Touch(R.id.arrow_up)
     void onUp(View v, MotionEvent event) {
-        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int speed = Integer.valueOf(speedValue.getText().toString().split(":")[1]) + minSpeed;
-            mqttSupp.sendMessage("u5000," + String.valueOf(speed));
-        } else if(event.getAction() == MotionEvent.ACTION_UP){
+            mqttSupp.sendMessage("u30000," + String.valueOf(speed));
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
             mqttSupp.sendMessage("s");
         }
+        recyclerView.smoothScrollToPosition(0);
     }
 
     @Touch(R.id.arrow_down)
     void onDown(View v, MotionEvent event) {
-        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int speed = Integer.valueOf(speedValue.getText().toString().split(":")[1]) + minSpeed;
-            mqttSupp.sendMessage("d5000," + String.valueOf(speed));
-        } else if(event.getAction() == MotionEvent.ACTION_UP){
+            mqttSupp.sendMessage("d30000," + String.valueOf(speed));
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
             mqttSupp.sendMessage("s");
         }
+        recyclerView.smoothScrollToPosition(0);
     }
 
     @Touch(R.id.arrow_right)
     void onRight(View v, MotionEvent event) {
-        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int speed = Integer.valueOf(speedValue.getText().toString().split(":")[1]) + minSpeed;
-            mqttSupp.sendMessage("r360," + String.valueOf(speed));
-        } else if(event.getAction() == MotionEvent.ACTION_UP){
+            mqttSupp.sendMessage("r1080," + String.valueOf(speed));
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
             mqttSupp.sendMessage("s");
         }
+        recyclerView.smoothScrollToPosition(0);
     }
 
     @Touch(R.id.arrow_left)
     void onLeft(View v, MotionEvent event) {
-        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int speed = Integer.valueOf(speedValue.getText().toString().split(":")[1]) + minSpeed;
-            mqttSupp.sendMessage("l360," + String.valueOf(speed));
-        } else if(event.getAction() == MotionEvent.ACTION_UP){
+            mqttSupp.sendMessage("l1080," + String.valueOf(speed));
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
             mqttSupp.sendMessage("s");
         }
+        recyclerView.smoothScrollToPosition(0);
     }
 
+    boolean up = false;
     @Click(R.id.stop)
     void onStopClicked() {
         mqttSupp.sendMessage("s");
+        recyclerView.smoothScrollToPosition(0);
     }
 
     @Override

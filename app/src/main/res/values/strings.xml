@@ -3,4 +3,8 @@
     <string name="adres_brokera">Adres brokera</string>
     <string name="port_brokera">Port brokera</string>
     <string name="polacz">Połącz</string>
+    <string name="client_id">Android client</string>
+    <string name="answer_topic">answerTopic</string>
+    <string name="error_topic">errorTopic</string>
+    <string name="send_topic">sendTopic</string>
 </resources>
